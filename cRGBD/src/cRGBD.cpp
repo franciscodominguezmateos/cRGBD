@@ -17,6 +17,7 @@
 #include <sophus/so3.hpp>
 #include <GL/glut.h>
 #include <opencv2/highgui/highgui.hpp>
+#include "opencv2/imgproc/imgproc.hpp"
 
 using namespace cv;
 using namespace std;
@@ -25,6 +26,13 @@ using Eigen::MatrixXd;
 float newAngle=0;
 Mat image,depth;
 void renderDepth(Mat img,Mat d);
+
+//Canny params
+int edgeThresh = 1;
+int lowThreshold;
+int const max_lowThreshold = 100;
+int ratio = 3;
+int kernel_size = 5;
 
 void displayMe(void)
 {
@@ -101,8 +109,8 @@ void glInit(int argc, char** argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glEnable(GL_DEPTH_TEST);
-    glutInitWindowSize(300, 300);
-    glutInitWindowPosition(100, 100);
+    glutInitWindowSize(640, 480);
+    glutInitWindowPosition(400, 100);
     glutCreateWindow("Hello world :D GIT!!!");
     glutDisplayFunc(displayMe);
     glutReshapeFunc(managerResize);
@@ -167,7 +175,7 @@ int main(int argc, char** argv ) {
 	    while (getline(myfile,str)) {
 	    	lines.push_back(str);
    	    }
-	    istringstream ss(lines[0]);
+	    istringstream ss(lines[10]);
 	    vector<string> words;
 	    while(ss>> str){
 	    	words.push_back(str);
@@ -176,7 +184,23 @@ int main(int argc, char** argv ) {
 	    imagepath=basepath +"/"+words[1];
 	    depthpath=basepath +"/"+words[3];
 
-	    image = imread(imagepath, IMREAD_COLOR );
+	    Mat src_gray,detected_edges,imagec;
+	    imagec = imread(imagepath, IMREAD_COLOR );
+	    /// Reduce noise with a kernel 3x3
+	    cvtColor( imagec, src_gray, CV_BGR2GRAY );
+	    //blur( src_gray, detected_edges, Size(3,3) );
+	    //GaussianBlur( src_gray, detected_edges, Size(5,5), 5, 5, BORDER_DEFAULT );
+	    //medianBlur (src_gray, detected_edges, 15 );
+	    bilateralFilter (src_gray, detected_edges, 15,15*2, 15/2 );
+	    /// Canny detector
+	    Canny( detected_edges, detected_edges, lowThreshold, lowThreshold*ratio, kernel_size );
+
+	    /// Using Canny's output as a mask, we display our result
+	    image = Scalar::all(0);
+
+	    imagec.copyTo( image, detected_edges);
+
+
 	    depth = imread(depthpath, IMREAD_ANYDEPTH );
 	    depth.convertTo(depth, CV_32F);
 	    cout << image.channels() << endl;
