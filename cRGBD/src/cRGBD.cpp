@@ -23,19 +23,22 @@ using namespace std;
 using Eigen::MatrixXd;
 
 float newAngle=0;
+Mat image,depth;
+void renderDepth(Mat img,Mat d);
 
 void displayMe(void)
 {
     glClear(GL_COLOR_BUFFER_BIT);
     glLoadIdentity();
-    glTranslatef(0.0f, 0.0f, -10.0f);
-    glRotatef(newAngle += 1, 1.0f, 0.0f, 0.0f);
+    glTranslatef(0.0f, 0.0f, -2.0f);
+    glRotatef(newAngle, 1.0f, 0.0f, 0.0f);
+    renderDepth(image,depth);
     glColor3f(1.0,1.0,0.0);
     glBegin(GL_POLYGON);
         glVertex3f(0.0, 0.0, 0.0);
-        glVertex3f(0.5, 0.0, 0.0);
-        glVertex3f(0.5, 0.5, 0.0);
-        glVertex3f(0.0, 0.5, 0.0);
+        glVertex3f(0.01, 0.0, 0.0);
+        glVertex3f(0.01, 0.01, 0.0);
+        glVertex3f(0.0, 0.01, 0.0);
     glEnd();
     //glFlush();
     glutSwapBuffers();
@@ -49,6 +52,18 @@ void managerKeyboard(unsigned char key, int x, int y)
 {
     switch (key)
     {
+    case 'q':
+    case 'Q':{
+    	newAngle++;
+        break;
+
+    }
+    case 'a':
+    case 'A':{
+    	newAngle--;
+        break;
+
+    }
         case 27:
         {
             exit(0);
@@ -78,7 +93,7 @@ void managerResize(int w, int h) {
     glViewport(0, 0, w, h);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(45.0, (double)w / (double)h, 1.0, 200.0);
+    gluPerspective(30.0, (double)w / (double)h, 1.0, 200.0);
     glMatrixMode(GL_MODELVIEW);
 }
 
@@ -102,9 +117,10 @@ void renderDepth(Mat img,Mat d){
 	{
 		for (int u=0;u<d.cols;u++)
 		{
-			float r=img.at<uchar>(v,u,0)/255.0;
-			float g=img.at<uchar>(v,u,1)/255.0;
-			float b=img.at<uchar>(v,u,2)/255.0;
+		    Vec3b col=img.at<Vec3b>(v,u);
+			float b=col.val[0]/255.0;
+			float g=col.val[1]/255.0;
+			float r=col.val[2]/255.0;
 			glColor3f(r,g,b);
 			float deep=d.at<float>(v,u);
 			float x=u;
@@ -119,7 +135,7 @@ void renderDepth(Mat img,Mat d){
 			float Z=deep/factor;
 			float X = (x - cx) * Z / fx;
 			float Y = (y - cy) * Z / fy;
-			glVertex3f(X,Y,Z);
+			glVertex3f(X,-Y,-Z);
 		}
 	}
 	glEnd();
@@ -130,7 +146,6 @@ void show(Mat i,Mat d){
 }
 
 int main(int argc, char** argv ) {
-	glInit(argc,argv);
 	  MatrixXd m(2,2);
 	  string basepath,assopath,imagepath,depthpath;
 	  m(0,0) = 3;
@@ -152,7 +167,7 @@ int main(int argc, char** argv ) {
 	    while (getline(myfile,str)) {
 	    	lines.push_back(str);
    	    }
-	    istringstream ss(lines[50]);
+	    istringstream ss(lines[0]);
 	    vector<string> words;
 	    while(ss>> str){
 	    	words.push_back(str);
@@ -161,9 +176,11 @@ int main(int argc, char** argv ) {
 	    imagepath=basepath +"/"+words[1];
 	    depthpath=basepath +"/"+words[3];
 
-	    Mat image,depth;
 	    image = imread(imagepath, IMREAD_COLOR );
 	    depth = imread(depthpath, IMREAD_ANYDEPTH );
+	    depth.convertTo(depth, CV_32F);
+	    cout << image.channels() << endl;
+
 
 	    if ( !image.data )
 	    {
@@ -175,9 +192,10 @@ int main(int argc, char** argv ) {
 	        printf("No depth data \n");
 	        return -1;
 	    }
-	    namedWindow("Display Image", WINDOW_AUTOSIZE );
+	    //namedWindow("Display Image", WINDOW_AUTOSIZE );
 	    //show(image,depth);
 	    //waitKey(0);
+		glInit(argc,argv);
 	    glutMainLoop();
 	cout << "!!!Hello World!!!" << endl; // prints !!!Hello World!!!
 	return 0;
