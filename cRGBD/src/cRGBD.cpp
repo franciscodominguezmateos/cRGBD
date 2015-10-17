@@ -18,6 +18,7 @@
 #include <GL/glut.h>
 #include <opencv2/highgui/highgui.hpp>
 #include "opencv2/imgproc/imgproc.hpp"
+#include "depthImage.h"
 
 using namespace cv;
 using namespace std;
@@ -25,6 +26,8 @@ using Eigen::MatrixXd;
 
 float newAngle=0;
 Mat image,depth;
+DepthImage di;
+
 void renderDepth(Mat img,Mat d);
 
 //Canny params
@@ -38,6 +41,8 @@ void displayMe(void)
 {
     glClear(GL_COLOR_BUFFER_BIT);
     glLoadIdentity();
+    //gluLookAt (0.0, 0.0, -2.0, di.getCentroid().x, -di.getCentroid().y, -di.getCentroid().z, 0.0, 1.0, 0.0);
+    //gluLookAt (0.0, 0.0, -2.0, 0, 0, 0, 0.0, 1.0, 0.0);
     glTranslatef(0.0f, 0.0f, -2.0f);
     glRotatef(newAngle, 1.0f, 0.0f, 0.0f);
     renderDepth(image,depth);
@@ -118,32 +123,7 @@ void glInit(int argc, char** argv) {
     glutKeyboardFunc(managerKeyboard);
     glutIdleFunc(managerIdle);
 }
-Point3f get3DpointFromDepthImage(Mat d,int u,int v){
-	float deep=d.at<float>(v,u);
-	float x=u;
-	float y=v;
-	float level=1;
-	//Intrinsic data for Stum dataset
-	float fx = 525.0/level;  // focal length x
-	float fy = 525.0/level;  // focal length y
-	float cx = 319.5/level;  // optical center x
-	float cy = 239.5/level;  // optical center y
-	float factor = 5000.0; // for the 16-bit PNG files
-	float Z=deep/factor;
-	float X = (x - cx) * Z / fx;
-	float Y = (y - cy) * Z / fy;
-	return Point3f(X,Y,Z);
-}
-vector<Point3f> get3DpointsFromDepthImage(Mat d){
-	vector<Point3f> vp;
-	for (int v=0;v<d.rows;v++){
-		for (int u=0;u<d.cols;u++){
-			Point3f p=get3DpointFromDepthImage(d,u,v);
-			vp.push_back(p);
-		}
-	}
-	return vp;
-}
+
 void renderDepth(Mat img,Mat d){
 	glPointSize(1.0);
 	glBegin(GL_POINTS);
@@ -156,7 +136,7 @@ void renderDepth(Mat img,Mat d){
 			float g=col.val[1]/255.0;
 			float r=col.val[2]/255.0;
 			glColor3f(r,g,b);
-			Point3f p=get3DpointFromDepthImage(d,u,v);
+			Point3f p=di.getPoint3D(u,v);
 			glVertex3f(p.x,-p.y,-p.z);
 		}
 	}
@@ -213,12 +193,14 @@ int main(int argc, char** argv ) {
 	    image = Scalar::all(0);
 
 	    imagec.copyTo( image, detected_edges);
+	    image=imagec;
 
 	    depth = imread(depthpath, IMREAD_ANYDEPTH );
 	    depth.convertTo(depth, CV_32F);
 	    cout << image.channels() << endl;
 
-
+	    di.setImg(image);
+	    di.setDepth(depth);
 	    if ( !image.data )
 	    {
 	        printf("No image data \n");
