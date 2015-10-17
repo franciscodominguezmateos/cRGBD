@@ -101,7 +101,7 @@ void managerResize(int w, int h) {
     glViewport(0, 0, w, h);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(30.0, (double)w / (double)h, 1.0, 200.0);
+    gluPerspective(20.0, (double)w / (double)h, 1.0, 200.0);
     glMatrixMode(GL_MODELVIEW);
 }
 
@@ -118,6 +118,32 @@ void glInit(int argc, char** argv) {
     glutKeyboardFunc(managerKeyboard);
     glutIdleFunc(managerIdle);
 }
+Point3f get3DpointFromDepthImage(Mat d,int u,int v){
+	float deep=d.at<float>(v,u);
+	float x=u;
+	float y=v;
+	float level=1;
+	//Intrinsic data for Stum dataset
+	float fx = 525.0/level;  // focal length x
+	float fy = 525.0/level;  // focal length y
+	float cx = 319.5/level;  // optical center x
+	float cy = 239.5/level;  // optical center y
+	float factor = 5000.0; // for the 16-bit PNG files
+	float Z=deep/factor;
+	float X = (x - cx) * Z / fx;
+	float Y = (y - cy) * Z / fy;
+	return Point3f(X,Y,Z);
+}
+vector<Point3f> get3DpointsFromDepthImage(Mat d){
+	vector<Point3f> vp;
+	for (int v=0;v<d.rows;v++){
+		for (int u=0;u<d.cols;u++){
+			Point3f p=get3DpointFromDepthImage(d,u,v);
+			vp.push_back(p);
+		}
+	}
+	return vp;
+}
 void renderDepth(Mat img,Mat d){
 	glPointSize(1.0);
 	glBegin(GL_POINTS);
@@ -130,20 +156,8 @@ void renderDepth(Mat img,Mat d){
 			float g=col.val[1]/255.0;
 			float r=col.val[2]/255.0;
 			glColor3f(r,g,b);
-			float deep=d.at<float>(v,u);
-			float x=u;
-			float y=v;
-			float level=1;
-			//Intrinsic data for Stum dataset
-			float fx = 525.0/level;  // focal length x
-			float fy = 525.0/level;  // focal length y
-			float cx = 319.5/level;  // optical center x
-			float cy = 239.5/level;  // optical center y
-			float factor = 5000.0; // for the 16-bit PNG files
-			float Z=deep/factor;
-			float X = (x - cx) * Z / fx;
-			float Y = (y - cy) * Z / fy;
-			glVertex3f(X,-Y,-Z);
+			Point3f p=get3DpointFromDepthImage(d,u,v);
+			glVertex3f(p.x,-p.y,-p.z);
 		}
 	}
 	glEnd();
@@ -154,32 +168,32 @@ void show(Mat i,Mat d){
 }
 
 int main(int argc, char** argv ) {
-	  MatrixXd m(2,2);
-	  string basepath,assopath,imagepath,depthpath;
-	  m(0,0) = 3;
-	  m(1,0) = 2.5;
-	  m(0,1) = -1;
-	  m(1,1) = m(1,0) + m(0,1);
-	  cout << m << endl;
-	  cout << argv[1] << endl;
-	    if ( argc != 2 )
-	    {
+	MatrixXd m(2,2);
+	string basepath,assopath,imagepath,depthpath;
+	m(0,0) = 3;
+	m(1,0) = 2.5;
+	m(0,1) = -1;
+	m(1,1) = m(1,0) + m(0,1);
+	cout << m << endl;
+	cout << argv[1] << endl;
+	if ( argc != 2 )
+		{
 	        printf("usage: DisplayImage.out <Image_Path> <Depth_Path>\n");
 	        return -1;
-	    }
-	    vector<string> lines;
-	    basepath=argv[1];
-	    assopath=basepath+"/association.txt";
-	    ifstream myfile(assopath.c_str());
-	    string str;
-	    while (getline(myfile,str)) {
-	    	lines.push_back(str);
-   	    }
-	    istringstream ss(lines[10]);
-	    vector<string> words;
-	    while(ss>> str){
-	    	words.push_back(str);
-	    }
+	}
+	vector<string> lines;
+	basepath=argv[1];
+	assopath=basepath+"/association.txt";
+	ifstream myfile(assopath.c_str());
+	string str;
+	while (getline(myfile,str)) {
+		lines.push_back(str);
+   	}
+	istringstream ss(lines[10]);
+	vector<string> words;
+	while(ss>> str){
+		words.push_back(str);
+	}
 	    cout << words[1] << " " << words[3] << endl;
 	    imagepath=basepath +"/"+words[1];
 	    depthpath=basepath +"/"+words[3];
@@ -199,7 +213,6 @@ int main(int argc, char** argv ) {
 	    image = Scalar::all(0);
 
 	    imagec.copyTo( image, detected_edges);
-
 
 	    depth = imread(depthpath, IMREAD_ANYDEPTH );
 	    depth.convertTo(depth, CV_32F);
