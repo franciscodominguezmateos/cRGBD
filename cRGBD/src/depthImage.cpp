@@ -34,9 +34,23 @@ vector<Point3f> DepthImage::getPoints3D(){
 	vector<Point3f> vp;
 	for (int v=0;v<dImg.rows;v++){
 		for (int u=0;u<dImg.cols;u++){
-			Point3f p=getPoint3D(u,v);
-			vp.push_back(p);
+			if (isGoodDepthPixel(u,v)){
+				Point3f p=getPoint3D(u,v);
+				vp.push_back(p);
+			}
 		}
 	}
 	return vp;
+}
+void DepthImage::setDepth(const Mat& img) {
+	dImg = img;
+	vector<Point3f> pts;
+	Point3f pt;
+	for(Point3f p:pts){
+		pt+=p;
+	}
+	centroid=pt;
+	centroid.x/=size();
+	centroid.y/=size();
+	centroid.z/=size();
 }

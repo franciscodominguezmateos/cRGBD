@@ -131,13 +131,15 @@ void renderDepth(Mat img,Mat d){
 	{
 		for (int u=0;u<d.cols;u++)
 		{
-		    Vec3b col=img.at<Vec3b>(v,u);
-			float b=col.val[0]/255.0;
-			float g=col.val[1]/255.0;
-			float r=col.val[2]/255.0;
-			glColor3f(r,g,b);
-			Point3f p=di.getPoint3D(u,v);
-			glVertex3f(p.x,-p.y,-p.z);
+			if(di.isGoodDepthPixel(u,v)){
+			    Vec3b col=img.at<Vec3b>(v,u);
+				float b=col.val[0]/255.0;
+				float g=col.val[1]/255.0;
+				float r=col.val[2]/255.0;
+				glColor3f(r,g,b);
+				Point3f p=di.getPoint3D(u,v);
+				glVertex3f(p.x,-p.y,-p.z);
+			}
 		}
 	}
 	glEnd();
@@ -148,14 +150,7 @@ void show(Mat i,Mat d){
 }
 
 int main(int argc, char** argv ) {
-	MatrixXd m(2,2);
 	string basepath,assopath,imagepath,depthpath;
-	m(0,0) = 3;
-	m(1,0) = 2.5;
-	m(0,1) = -1;
-	m(1,1) = m(1,0) + m(0,1);
-	cout << m << endl;
-	cout << argv[1] << endl;
 	if ( argc != 2 )
 		{
 	        printf("usage: DisplayImage.out <Image_Path> <Depth_Path>\n");
@@ -169,6 +164,7 @@ int main(int argc, char** argv ) {
 	while (getline(myfile,str)) {
 		lines.push_back(str);
    	}
+	cout << lines.size() << " images" <<endl;
 	istringstream ss(lines[10]);
 	vector<string> words;
 	while(ss>> str){
@@ -192,15 +188,20 @@ int main(int argc, char** argv ) {
 	    /// Using Canny's output as a mask, we display our result
 	    image = Scalar::all(0);
 
-	    imagec.copyTo( image, detected_edges);
+	    //imagec.copyTo( image, detected_edges);
 	    image=imagec;
-
-	    depth = imread(depthpath, IMREAD_ANYDEPTH );
-	    depth.convertTo(depth, CV_32F);
 	    cout << image.channels() << endl;
+
+	    Mat depthAll;
+	    depthAll = imread(depthpath, IMREAD_ANYDEPTH );
+	    depthAll.convertTo(depthAll, CV_32F);
+	    depth = Scalar::all(0);
+	    depthAll.copyTo( depth, detected_edges);
+	    //depth=depthAll;
 
 	    di.setImg(image);
 	    di.setDepth(depth);
+	    cout << di.getPoints3D().size() << "filtered points" <<endl;
 	    if ( !image.data )
 	    {
 	        printf("No image data \n");

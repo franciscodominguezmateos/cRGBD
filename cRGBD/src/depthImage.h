@@ -25,6 +25,8 @@ public:
 	DepthImage();
 	virtual ~DepthImage();
 	Point3f getPoint3D(int u,int v);
+	inline bool isGoodDepthPixel(int u,int v){float d=dImg.at<float>(v,u);return d>1e-6;}//d==0 bad
+	inline bool isGoodPoint3D(Point3f p){return p.z>0.001;}//Z==0 bad
 	vector<Point3f> getPoints3D();
 	inline const Mat& getImg() const {	return cImg;}
 	inline void setImg(const Mat& img) {cImg = img;}
@@ -33,18 +35,7 @@ public:
 	inline float getCy() const {return cy;	}
 	inline void setCy(float cy) {this->cy = cy;}
 	inline const Mat& getDepth() const {return dImg;	}
-	inline void setDepth(const Mat& img) {
-		dImg = img;
-		vector<Point3f> pts;
-		Point3f pt;
-		for(Point3f p:pts){
-			pt+=p;
-		}
-		centroid=pt;
-		centroid.x/=size();
-		centroid.y/=size();
-		centroid.z/=size();
-	}
+	void setDepth(const Mat& img);
 	inline float getFactor() const {return factor;	}
 	inline void setFactor(float factor) {this->factor = factor;}
 	inline float getFx() const {return fx;	}
