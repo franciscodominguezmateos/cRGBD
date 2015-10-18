@@ -54,3 +54,23 @@ void DepthImage::setDepth(const Mat& img) {
 	centroid.y/=size();
 	centroid.z/=size();
 }
+void DepthImage::glRender(){
+	glPointSize(1.0);
+	glBegin(GL_POINTS);
+	for (int v=0;v<dImg.rows;v++)
+	{
+		for (int u=0;u<dImg.cols;u++)
+		{
+			if(isGoodDepthPixel(u,v)){
+			    Vec3b col=getColor(u,v);
+				float b=col.val[0]/255.0;
+				float g=col.val[1]/255.0;
+				float r=col.val[2]/255.0;
+				glColor3f(r,g,b);
+				Point3f p=getPoint3D(u,v);
+				glVertex3f(p.x,-p.y,-p.z);
+			}
+		}
+	}
+	glEnd();
+}

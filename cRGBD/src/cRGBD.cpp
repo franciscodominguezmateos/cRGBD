@@ -125,24 +125,25 @@ void glInit(int argc, char** argv) {
 }
 
 void renderDepth(Mat img,Mat d){
-	glPointSize(1.0);
-	glBegin(GL_POINTS);
-	for (int v=0;v<d.rows;v++)
-	{
-		for (int u=0;u<d.cols;u++)
-		{
-			if(di.isGoodDepthPixel(u,v)){
-			    Vec3b col=img.at<Vec3b>(v,u);
-				float b=col.val[0]/255.0;
-				float g=col.val[1]/255.0;
-				float r=col.val[2]/255.0;
-				glColor3f(r,g,b);
-				Point3f p=di.getPoint3D(u,v);
-				glVertex3f(p.x,-p.y,-p.z);
-			}
-		}
-	}
-	glEnd();
+//	glPointSize(1.0);
+//	glBegin(GL_POINTS);
+//	for (int v=0;v<d.rows;v++)
+//	{
+//		for (int u=0;u<d.cols;u++)
+//		{
+//			if(di.isGoodDepthPixel(u,v)){
+//			    Vec3b col=img.at<Vec3b>(v,u);
+//				float b=col.val[0]/255.0;
+//				float g=col.val[1]/255.0;
+//				float r=col.val[2]/255.0;
+//				glColor3f(r,g,b);
+//				Point3f p=di.getPoint3D(u,v);
+//				glVertex3f(p.x,-p.y,-p.z);
+//			}
+//		}
+//	}
+//	glEnd();
+	di.glRender();
 }
 void show(Mat i,Mat d){
     imshow("Display Image", i);
@@ -201,7 +202,7 @@ int main(int argc, char** argv ) {
 
 	    di.setImg(image);
 	    di.setDepth(depth);
-	    cout << di.getPoints3D().size() << "filtered points" <<endl;
+	    cout << di.getPoints3D().size()/1000 << "mil filtered points" <<endl;
 	    if ( !image.data )
 	    {
 	        printf("No image data \n");

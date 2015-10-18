@@ -8,6 +8,7 @@
 #ifndef DEPTHIMAGE_H_
 #define DEPTHIMAGE_H_
 #include <vector>
+#include <GL/glut.h>
 #include <opencv2/core/core.hpp>
 
 using namespace cv;
@@ -24,6 +25,7 @@ class DepthImage {
 public:
 	DepthImage();
 	virtual ~DepthImage();
+	inline Vec3b getColor(int u,int v){return cImg.at<Vec3b>(v,u);}
 	Point3f getPoint3D(int u,int v);
 	inline bool isGoodDepthPixel(int u,int v){float d=dImg.at<float>(v,u);return d>1e-6;}//d==0 bad
 	inline bool isGoodPoint3D(Point3f p){return p.z>0.001;}//Z==0 bad
@@ -48,6 +50,7 @@ public:
 	inline int rows(){return cImg.rows;}
 	inline int size(){return cImg.cols*cImg.rows;}
 	inline Point3f getCentroid(){return centroid;}
+	void glRender();
 };
 
 #endif /* DEPTHIMAGE_H_ */
