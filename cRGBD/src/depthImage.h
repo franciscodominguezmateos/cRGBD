@@ -8,8 +8,13 @@
 #ifndef DEPTHIMAGE_H_
 #define DEPTHIMAGE_H_
 #include <vector>
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <sstream>
 #include <GL/glut.h>
-#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 using namespace cv;
 using namespace std;
@@ -22,8 +27,11 @@ class DepthImage {
 	float level; //pyramid level
 	float factor;//Sturm data set is 5000
 	Point3f centroid;
+	vector<string> getLinesFromFile(string fileName);
+	vector<string> split(string line);
 public:
 	DepthImage();
+	DepthImage(string basepath,int nImg);
 	virtual ~DepthImage();
 	inline Vec3b getColor(int u,int v){return cImg.at<Vec3b>(v,u);}
 	Point3f getPoint3D(int u,int v);
@@ -50,6 +58,7 @@ public:
 	inline int rows(){return cImg.rows;}
 	inline int size(){return cImg.cols*cImg.rows;}
 	inline Point3f getCentroid(){return centroid;}
+	DepthImage sparse();
 	void glRender();
 };
 

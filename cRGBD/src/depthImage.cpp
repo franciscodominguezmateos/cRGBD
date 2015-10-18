@@ -16,7 +16,41 @@ DepthImage::DepthImage() {
 	cy = 239.5/level;  // optical center y
 	factor = 5000.0; // for the 16-bit PNG files
 }
-
+vector<string> DepthImage::getLinesFromFile(string fileName){
+	vector<string> lines;
+	ifstream myfile(fileName.c_str());
+	string str;
+	while (getline(myfile,str))
+		lines.push_back(str);
+	return lines;
+}
+vector<string> DepthImage::split(string line){
+	string str;
+	istringstream ss(line);
+	vector<string> words;
+	while(ss>> str)
+		words.push_back(str);
+	return words;
+}
+DepthImage::DepthImage(string basepath,int nImg):DepthImage(){
+	string assopath,imagepath,depthpath;
+	assopath=basepath+"/association.txt";
+	vector<string> lines=getLinesFromFile(assopath);
+	vector<string> words=split(lines[10]);
+    imagepath=basepath +"/"+words[1];
+    depthpath=basepath +"/"+words[3];
+    Mat image = imread(imagepath, IMREAD_COLOR );
+    Mat depth = imread(depthpath, IMREAD_ANYDEPTH );
+    if ( !image.data ) {
+        printf("No image data \n");
+    }
+    if ( !depth.data ) {
+        printf("No depth data \n");
+    }
+    depth.convertTo(depth, CV_32F);
+	this->cImg=image;
+	this->dImg=depth;
+}
 DepthImage::~DepthImage() {
 	// TODO Auto-generated destructor stub
 }
@@ -44,15 +78,15 @@ vector<Point3f> DepthImage::getPoints3D(){
 }
 void DepthImage::setDepth(const Mat& img) {
 	dImg = img;
-	vector<Point3f> pts;
+	vector<Point3f> pts=this->getPoints3D();
 	Point3f pt;
 	for(Point3f p:pts){
 		pt+=p;
 	}
 	centroid=pt;
-	centroid.x/=size();
-	centroid.y/=size();
-	centroid.z/=size();
+	centroid.x/=pts.size();
+	centroid.y/=pts.size();
+	centroid.z/=pts.size();
 }
 void DepthImage::glRender(){
 	glPointSize(1.0);
@@ -73,4 +107,38 @@ void DepthImage::glRender(){
 		}
 	}
 	glEnd();
+}
+DepthImage DepthImage::sparse(){
+	//Canny params
+	//int edgeThresh = 1;
+	int lowThreshold=50;
+	//int const max_lowThreshold = 100;
+	int ratio = 3;
+	int kernel_size = 5;
+
+	DepthImage dImg=*this;
+	DepthImage di;
+	Mat src_gray,detected_edges,imagec,depth;
+	imagec=dImg.getImg();
+	/// Reduce noise with a kernel 3x3
+	cvtColor( imagec, src_gray, CV_BGR2GRAY );
+	//blur( src_gray, detected_edges, Size(3,3) );
+	GaussianBlur( src_gray, detected_edges, Size(5,5), 5, 5, BORDER_DEFAULT );
+	//medianBlur (src_gray, detected_edges, 15 );
+	//bilateralFilter (src_gray, detected_edges, 15,15*2, 15/2 );
+	/// Canny detector
+	Canny( detected_edges, detected_edges, lowThreshold, lowThreshold*ratio, kernel_size );
+
+	Mat depthAll;
+	depthAll=dImg.getDepth();
+    depth = Scalar::all(0);
+    depthAll.copyTo( depth, detected_edges);
+
+    di.setImg(imagec);
+    di.setDepth(depth);
+//    cout << dImg.getCentroid()<< " centroid"<<endl;
+//    cout << dImg.getPoints3D().size()/1000 << "mil filtered points" <<endl;
+//    cout << di.getCentroid()<< " centroid"<<endl;
+//    cout << di.getPoints3D().size()/1000 << "mil filtered points" <<endl;
+    return di;
 }
